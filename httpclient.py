@@ -25,7 +25,7 @@ import re
 import urllib
 
 def help():
-    print "httpclient.py [GET/POST] [URL]\n"
+    print ("httpclient.py [GET/POST] [URL]\n")
 
 class HTTPResponse(object):
     def __init__(self, code=200, body=""):
@@ -35,18 +35,20 @@ class HTTPResponse(object):
 class HTTPClient(object):
     #def get_host_port(self,url):
 
-    def connect(self, host, port):
+    def connect(self, host, port):  #________create socket
         # use sockets!
-        return None
+        clientSocket= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        clientSocket.connect((host, port)) 
+        return clientSocket
 
-    def get_code(self, data):
-        return None
+    def get_code(self, data):       #_________get code
+        return int(data.split(" ")[1])
 
-    def get_headers(self,data):
-        return None
+    def get_headers(self,data):     #_________get header
+        return data.split("\r\n\r\n")[0]
 
-    def get_body(self, data):
-        return None
+    def get_body(self, data):       #_________get content
+        return data.split("\r\n\r\n")[1]
 
     # read everything from the socket
     def recvall(self, sock):
@@ -60,12 +62,12 @@ class HTTPClient(object):
                 done = not part
         return str(buffer)
 
-    def GET(self, url, args=None):
+    def GET(self, url, args=None):  #______________get method
         code = 500
         body = ""
         return HTTPResponse(code, body)
 
-    def POST(self, url, args=None):
+    def POST(self, url, args=None): #______________post method
         code = 500
         body = ""
         return HTTPResponse(code, body)
@@ -83,6 +85,6 @@ if __name__ == "__main__":
         help()
         sys.exit(1)
     elif (len(sys.argv) == 3):
-        print client.command( sys.argv[2], sys.argv[1] )
+        print (client.command( sys.argv[2], sys.argv[1] ))
     else:
-        print client.command( sys.argv[1] )   
+        print (client.command( sys.argv[1] ))
