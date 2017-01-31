@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# Copyright 2016 Abram Hindle, https://github.com/tywtyw2002, and https://github.com/treedust
+# Copyright 2016 Abram Hindle, https://github.com/tywtyw2002, and https://github.com/treedust, Hong Wang
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import socket
 import re
 # you may use urllib to encode data appropriately
 import urllib
+from urlparse import urlparse
 
 def help():
     print ("httpclient.py [GET/POST] [URL]\n")
@@ -35,19 +36,19 @@ class HTTPResponse(object):
 class HTTPClient(object):
     #def get_host_port(self,url):
 
-    def connect(self, host, port):  #________create socket
+    def connect(self, host, port):  #create socket
         # use sockets!
         clientSocket= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         clientSocket.connect((host, port)) 
         return clientSocket
 
-    def get_code(self, data):       #_________get code
+    def get_code(self, data):       #get code
         return int(data.split(" ")[1])
 
-    def get_headers(self,data):     #_________get header
+    def get_headers(self,data):     #get header
         return data.split("\r\n\r\n")[0]
 
-    def get_body(self, data):       #_________get content
+    def get_body(self, data):       #get content
         return data.split("\r\n\r\n")[1]
 
     # read everything from the socket
@@ -61,15 +62,47 @@ class HTTPClient(object):
             else:
                 done = not part
         return str(buffer)
-
-    def GET(self, url, args=None):  #______________get method
+    
+    def parseUrl(self,url):
+        #https://docs.python.org/2/library/urlparse.html
+        url = urlparse(url)
+        host = url.hostname
+        port = url.port
+        if port == None:
+            port = 80
+        path = url.path
+        
+        return host,port,path
+	
+    def GET(self, url, args=None):  #get method
         code = 500
         body = ""
+	host,port,path = self.parseUrl(url)
+	socket = self.connect(host,port)
+	socket.sendall("GET " + path + " HTTP/1.1\r\n"+"Host:" + host + "\r\n\r\n")
+	resp = self.recvall(socket)
+        code = self.get_code(resp)
+        body = self.get_body(resp)
         return HTTPResponse(code, body)
 
-    def POST(self, url, args=None): #______________post method
+    def POST(self, url, args=None): #post method
         code = 500
         body = ""
+        arg = ""
+        if args != None:
+            #https://docs.python.org/2/library/urllib.html
+            arg = urllib.urlencode(args)
+        host,port,path = self.parseUrl(url)
+	socket = self.connect(host,port)
+	request= "POST " + path + " HTTP/1.1\r\n"+"Host:" + host + "\r\n"
+	request+= "Content-Type:application/x-www-form-urlencoded\r\n"
+	request+= "Content-Length:" + str(len(arg)) + "\r\n\r\n"
+	request+= arg
+	socket.sendall(request)
+	resp = self.recvall(socket)
+        code = self.get_code(resp)
+        body = self.get_body(resp)
+        print code, body	
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
